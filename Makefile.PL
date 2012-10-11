@@ -1,0 +1,20 @@
+use inc::Module::Install;
+name 'Mojolicious-Plugin-Process';
+all_from 'lib/Mojolicious/Plugin/Process.pm';
+
+# Windows unsupported
+if ( $^O eq 'MSWin32' || $^O eq 'cygwin' ) {
+    die "$^O unsupported";
+}
+
+requires 'Mojolicious' => 3.02;
+
+tests 't/*.t';
+author_tests 'xt';
+
+test_requires 'Test::More';
+test_requires 'Capture::Tiny';
+
+auto_set_repository;
+auto_include;
+WriteAll;
