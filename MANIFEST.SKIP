@@ -25,3 +25,4 @@
 ^\.carton/
 ^carton.lock$
 ^.gitignore$
+README.pod
