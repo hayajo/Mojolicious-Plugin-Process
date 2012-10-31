@@ -1,4 +1,5 @@
 use inc::Module::Install;
+use Module::Install::Repository;
 name 'Mojolicious-Plugin-Process';
 all_from 'lib/Mojolicious/Plugin/Process.pm';
 
