@@ -22,7 +22,7 @@ sub start_server {
             PeerAddr => '127.0.0.1',
             PeerPort => $port,
         );
-    my $url = Mojo::URL->new("htt://127.0.0.1:$port");
+    my $url = Mojo::URL->new("http://127.0.0.1:$port");
     $_servers->{$pid} = { handle => $server, url => $url };
     return ($pid, $url);
 }
