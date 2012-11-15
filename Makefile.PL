@@ -4,7 +4,7 @@ name 'Mojolicious-Plugin-Process';
 all_from 'lib/Mojolicious/Plugin/Process.pm';
 
 # Windows unsupported
-if ( $^O eq 'MSWin32' || $^O eq 'cygwin' ) {
+if ( $^O eq 'MSWin32' || $^O eq 'cygwin' || $^O eq 'msys' ) {
     die "$^O unsupported";
 }
 
