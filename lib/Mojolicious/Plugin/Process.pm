@@ -100,12 +100,12 @@ Mojolicious::Plugin::Process - execute a non-blocking command
   # Mojolicious
   sub stratup {
     my $self = shift;
-    $self->pulugin('Process');
+    $self->plugin('Process');
     ...
   }
 
   # Mojolicious::Lite
-  pulugin 'Process';
+  plugin 'Process';
 
   # in controller
   get '/job' => sub {
