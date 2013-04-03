@@ -7,7 +7,7 @@ get '/' => sub {
     my $self   = shift;
     my $stream = $self->process(
         'perl',
-        cmd_args => [ '-e', 'sleep 0' ],
+        cmd_args => [ '-e', 'sleep' ],
         timeout  => 0,
     );
     $self->render( text => $stream->pid );
