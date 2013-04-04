@@ -49,7 +49,7 @@
             _watch($stream_stderr);
         }
 
-        return ($stream_stdout, $stdin);
+        return (wantarray) ? ($pid, $stdin) : $pid;
     }
 
     sub _watch {
@@ -151,7 +151,7 @@ L<Mojolicious::Plugin::Process> contains a helper: I<process>.
 
 =head2 C<process>
 
-  my ($stream, $stdin) = $self->process(
+  my ($pid, $stdin) = $self->process(
       command => [ 'job-command', 'id', $job_id ],
       stdtout => {
           read => sub {

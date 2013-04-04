@@ -5,15 +5,15 @@ plugin 'Process';
 
 get '/' => sub {
     my $self   = shift;
-    my $stream = $self->process(
+    my $pid = $self->process(
         command => [qw/perl -e sleep/],
     );
-    $self->render( text => $stream->pid );
+    $self->render( text => $pid );
 };
 
 get '/handler' => sub {
     my $self   = shift;
-    my $stream = $self->process(
+    my $pid = $self->process(
         command => [ qw/perl -e/, 'local $| = 1; sleep 3; print "Hello"' ],
         stdout  => {
             read => sub {
@@ -23,12 +23,12 @@ get '/handler' => sub {
             }
         },
     );
-    $self->render( text => $stream->pid );
+    $self->render( text => $pid );
 };
 
 get '/timeout' => sub {
     my $self   = shift;
-    my $stream = $self->process(
+    my $pid = $self->process(
         command => [ 'perl', '-e', 'local $| = 1; sleep 10; print "Hello"' ],
         stdout  => {
             read => sub {
@@ -47,12 +47,12 @@ get '/timeout' => sub {
         },
         timeout => 3,
     );
-    $self->render( text => $stream->pid );
+    $self->render( text => $pid );
 };
 
 get '/stderr' => sub {
     my $self   = shift;
-    my $stream = $self->process(
+    my $pid = $self->process(
         command => [ qw/perl -e/, 'local $| = 1; sleep 3; print "Hello STDOUT"; print STDERR "Hello STDERR"' ],
         stdout  => {
             read => sub {
@@ -69,12 +69,12 @@ get '/stderr' => sub {
             }
         },
     );
-    $self->render( text => $stream->pid );
+    $self->render( text => $pid );
 };
 
 get '/stdin' => sub {
     my $self   = shift;
-    my ($stream, $stdin) = $self->process(
+    my ($pid, $stdin) = $self->process(
         command => [ qw/perl -e/, 'print <STDIN>' ],
         stdout  => {
             read => sub {
@@ -85,7 +85,7 @@ get '/stdin' => sub {
         },
     );
     print $stdin "foobarbuz";
-    $self->render( text => $stream->pid );
+    $self->render( text => $pid );
 };
 
 app->start;
