@@ -2,7 +2,9 @@
     package Mojolicious::Plugin::Process;
     use Mojo::Base 'Mojolicious::Plugin';
     use Mojo::IOLoop;
-    use Encode ();
+    use Symbol ();
+    use IPC::Open3 ();
+    use Carp ();
 
     our $VERSION = '0.01';
 
@@ -15,9 +17,39 @@
     }
 
     sub _process {
-        my $stream = Mojo::IOLoop::Stream::Process->new(@_);
-        _watch($stream);
-        return $stream;
+        my $args = {@_};
+        my $command = $args->{command} or Carp::croak "command was not specified";
+        $command = [ $command ] if( ref($command) ne 'ARRAY');
+
+        my ($stdin, $stdout, $stderr);
+        $stderr = Symbol::gensym;
+        my $pid = IPC::Open3::open3($stdin, $stdout, $stderr, @$command);
+
+        my $stream_stdout = Mojo::IOLoop::Stream::Process->new($stdout);
+        $stream_stdout->pid($pid);
+        $stream_stdout->command($command);
+        $stream_stdout->timeout( $args->{timeout} ) if defined $args->{timeout}; # default 15 sec (Mojo::IOLoop::Stream)
+        for my $event ( keys %{ $args->{stdout} || {} } ) {
+            $stream_stdout->on( $event => $args->{stdout}->{$event} );
+        }
+        # regist a default handler to stdout
+        for my $event (qw{ close error timeout }) {
+            $stream_stdout->on( $event => sub { shift->_finish(@_) } );
+        }
+        _watch($stream_stdout);
+
+        if ( my $stderr_handler = $args->{stderr} ) {
+            my $stream_stderr = Mojo::IOLoop::Stream::Process->new($stderr);
+            $stream_stderr->pid($pid);
+            $stream_stderr->command($command);
+            $stream_stderr->timeout($stream_stdout->timeout);
+            for my $event ( keys %{ $args->{stderr} || {} } ) {
+                $stream_stderr->on( $event => $args->{stderr}->{$event} );
+            }
+            _watch($stream_stderr);
+        }
+
+        return ($stream_stdout, $stdin);
     }
 
     sub _watch {
@@ -26,8 +58,23 @@
         $stream->ioloop_id($id);
         $stream->on( close => sub {
             my $stream = shift;
-            Mojo::IOLoop->singleton->remove( $stream->ioloop_id );
+            Mojo::IOLoop->singleton->remove($id);
         } );
+
+    }
+}
+
+{
+    package Mojo::IOLoop::Stream::Process;
+    use Mojo::Base 'Mojo::IOLoop::Stream';
+
+    has 'ioloop_id';
+    has 'pid';
+    has 'command';
+
+    sub DESTROY {
+        my $pid = $_[0]->pid;
+        _sig_term($pid);
     }
 
     sub _finish {
@@ -39,52 +86,6 @@
         my $pid = shift // return;
         kill 'TERM', $pid if ( kill( 0, $pid ) );
     }
-}
-
-{
-    package Mojo::IOLoop::Stream::Process;
-    use Mojo::Base 'Mojo::IOLoop::Stream';
-    has 'ioloop_id';
-    has 'pid';
-    has 'cmd';
-    has 'cmd_args';
-
-    sub new {
-        my $class = shift;
-        my $cmd   = shift;
-        my $opts  = { @_ };
-
-        my $pid = open( my $fh, '-|', $cmd, @{ $opts->{cmd_args} || [] } )
-            // die "failed fork: " . Encode::decode_utf8($!);
-
-        my $self = $class->SUPER::new($fh);
-        $self->pid($pid);
-        $self->cmd($cmd);
-        $self->cmd_args( $opts->{cmd_args} );
-        $self->timeout( $opts->{timeout} ) if defined $opts->{timeout}; # default 15 sec (Mojo::IOLoop::Stream)
-
-        for my $event ( keys %{ $opts->{handler} || {} } ) {
-            $self->on( $event => $opts->{handler}->{$event} );
-        }
-
-        # regist a default handler
-        for my $event (qw{ close error timeout }) {
-            $self->on( $event => sub { shift->_finish(@_) } );
-        }
-
-        return $self;
-    }
-
-    sub _finish {
-        my $pid = shift->pid;
-        _sig_term($pid);
-    }
-
-    sub _sig_term {
-        my $pid = shift // return;
-        kill 'TERM', $pid if ( kill( 0, $pid ) );
-    }
-
 }
 
 1;
@@ -117,12 +118,18 @@ Mojolicious::Plugin::Process - execute a non-blocking command
       if ($job_id) {
           # async execution of time-consuming process
           $c->process(
-              './bin/do-job',
-              cmd_args => [ (id => $job_id) ],
-              handler  => {
+              command => [ 'job-command', 'id', $job_id ],
+              stdtout => {
                   close  => sub {
                       my ($stream) = @_;
                       app->log->info( sprintf('[%s] end job', $stream->pid );
+                  },
+              },
+              stdterr => {
+                  read  => sub {
+                      my ($stream, $chunk) = @_;
+                      chomp $chunk;
+                      app->log->err( sprintf('[%d] %s', $stream->pid, $chunk );
                   },
               },
               timeout => 0,
@@ -144,10 +151,9 @@ L<Mojolicious::Plugin::Process> contains a helper: I<process>.
 
 =head2 C<process>
 
-  $self->process(
-      './bin/do-job',
-      cmd_args => [ (id => $job_id) ],
-      handler  => {
+  my ($stream, $stdin) = $self->process(
+      command => [ 'job-command', 'id', $job_id ],
+      stdtout => {
           read => sub {
               my ($stream, $chunk) = @_;
               chomp $chunk;
@@ -161,21 +167,19 @@ L<Mojolicious::Plugin::Process> contains a helper: I<process>.
       timeout => 0,
   );
 
-=head3 OPTIONS
+=head3 ARGUMENTS
 
-C<process> supports the following options.
+C<process> supports the following arguments
 
 =over 4
 
-=item * cmd_args
+=item * command: I<ArrayRef>
 
-B<ARRAYREF>
+command. this is requried argument.
 
-command arguments.
+  command => [ 'echo', 'foo' ]
 
-=item * handler
-
-B<HASHREF>
+=item * stdout: I<HashRef>, stderr: I<HashRef>
 
 can emit the following L<Mojo::IOLoop::Stream> events.
 
@@ -185,11 +189,25 @@ in handler, C<$stream> is a L<Mojo::IOLoop::Stream::Process> Ojbect.
 
 L<Mojo::IOLoop::Stream::Process> has the following attributes.
 
-C<ioloop_id>, C<pid>, C<cmd>, C<cmd_args>
+C<ioloop_id>, C<pid>, C<command>
 
-=item * timeout
+ stdtout => {
+     read => sub {
+         my ($stream, $chunk) = @_;
+         chomp $chunk;
+         app->log->info( sprintf('[%s] %s', $stream->pid, $chunk );
+     },
+     close => sub {
+         my ($stream) = @_;
+         app->log->info( sprintf('[%s] end process', $stream->pid );
+     },
+ }
+
+=item * timeout: I<Scalar>
 
 L<Mojo::IOLoop::Stream> timeout attribute.
+
+  timeout => 300
 
 =back
 

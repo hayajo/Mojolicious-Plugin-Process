@@ -20,7 +20,7 @@ ok $tx->is_finished;
 is $tx->res->code, 200;
 my $pid = $tx->res->body;
 ok $pid;
-ok kill(POSIX::SIGKILL, $pid);
+ok kill(0, $pid);
 
 stop_server($server_pid);
 
