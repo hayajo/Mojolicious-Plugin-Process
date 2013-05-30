@@ -26,6 +26,7 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
+            "Devel::AssertOS" : "0",
             "Module::Build::Tiny" : "0.019"
          }
       },
