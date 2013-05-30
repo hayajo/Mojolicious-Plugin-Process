@@ -10,57 +10,94 @@
 
     sub register {
         my ( $self, $app ) = @_;
-        $app->helper( process => sub {
-            my $c = shift;
-            _process(@_);
-        } );
+
+        $app->helper(
+            process => sub {
+                my $c = shift;
+                _process(@_);
+            }
+        );
     }
 
     sub _process {
         my $args = {@_};
-        my $command = $args->{command} or Carp::croak "command was not specified";
-        $command = [ $command ] if( ref($command) ne 'ARRAY');
+
+        my $command = $args->{command}
+            or Carp::croak "command was not specified";
+        $command = [$command] if ( ref($command) ne 'ARRAY' );
+
+        my $timeout        = $args->{timeout};
+        my $stdout_handler = $args->{stdout} || {};
+        my $stderr_handler = $args->{stderr} || {};
+
+        my ( $pid, $stdin, $stdout, $stderr ) = _open3($command);
+
+        my ( $stdout_stream, $stderr_stream ) = _gen_stream(
+            $stdout, $stderr,
+            pid     => $pid,
+            comman  => $command,
+            timeout => $timeout,
+        );
+
+        for my $ev ( keys %$stdout_handler ) {
+            $stdout_stream->on( $ev => $stdout_handler->{$ev} );
+        }
+        for my $ev ( keys %$stderr_handler ) {
+            $stderr_stream->on( $ev => $stderr_handler->{$ev} );
+        }
+
+        _watch( $stdout_stream, $stderr_stream );
+
+        return (wantarray) ? ($pid, $stdin) : $pid;
+    }
+
+    sub _open3 {
+        my $command = shift;
 
         my ($stdin, $stdout, $stderr);
         $stderr = Symbol::gensym;
         my $pid = IPC::Open3::open3($stdin, $stdout, $stderr, @$command);
 
-        my $stream_stdout = Mojo::IOLoop::Stream::Process->new($stdout);
-        $stream_stdout->pid($pid);
-        $stream_stdout->command($command);
-        $stream_stdout->timeout( $args->{timeout} ) if defined $args->{timeout}; # default 15 sec (Mojo::IOLoop::Stream)
-        for my $event ( keys %{ $args->{stdout} || {} } ) {
-            $stream_stdout->on( $event => $args->{stdout}->{$event} );
-        }
-        # regist a default handler to stdout
-        for my $event (qw{ close error timeout }) {
-            $stream_stdout->on( $event => sub { shift->_finish(@_) } );
-        }
-        _watch($stream_stdout);
+        return ( $pid, $stdin, $stdout, $stderr );
+    }
 
-        if ( my $stderr_handler = $args->{stderr} ) {
-            my $stream_stderr = Mojo::IOLoop::Stream::Process->new($stderr);
-            $stream_stderr->pid($pid);
-            $stream_stderr->command($command);
-            $stream_stderr->timeout($stream_stdout->timeout);
-            for my $event ( keys %{ $args->{stderr} || {} } ) {
-                $stream_stderr->on( $event => $args->{stderr}->{$event} );
+    sub _gen_stream {
+        my ( $stdout, $stderr, %args ) = @_;
+
+        my $pid     = $args{pid};
+        my $command = $args{command};
+        my $timeout = $args{timeout};
+
+        my @streams = ();
+        for my $fh ( ( $stdout, $stderr ) ) {
+            my $stream = Mojo::IOLoop::Stream::Process->new($fh);
+
+            $stream->pid($pid)         if ($pid);
+            $stream->command($command) if ($command);
+            $stream->timeout($timeout) if defined $timeout; # default 15 sec (Mojo::IOLoop::Stream)
+
+            for my $ev (qw/close error timeout/) {
+                $stream->on( $ev => sub { $_[0]->_finish(@_) } );
             }
-            _watch($stream_stderr);
+
+            push @streams, $stream;
         }
 
-        return (wantarray) ? ($pid, $stdin) : $pid;
+        return (wantarray) ? @streams : shift @streams;
     }
 
     sub _watch {
-        my $stream = shift;
-        my $id = Mojo::IOLoop->singleton->stream($stream);
-        $stream->ioloop_id($id);
-        $stream->on( close => sub {
-            my $stream = shift;
-            Mojo::IOLoop->singleton->remove($id);
-        } );
+        for my $stream (@_) {
+            my $id = Mojo::IOLoop->singleton->stream($stream);
 
+            $stream->ioloop_id($id);
+            $stream->on(
+                close => sub {
+                    my $stream = shift;
+                    Mojo::IOLoop->singleton->remove($id);
+                }
+            );
+        }
     }
 }
 
