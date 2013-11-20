@@ -189,17 +189,17 @@ L<Mojolicious::Plugin::Process> contains a helper: I<process>.
 
 =head2 C<process>
 
-  my ($pid, $stdin) = $self->process(
+  my ( $pid, $stdin ) = $self->process(
       command => [ 'job-command', 'id', $job_id ],
-      stdtout => {
+      stdout => {
           read => sub {
-              my ($stream, $chunk) = @_;
+              my ( $stream, $chunk ) = @_;
               chomp $chunk;
-              app->log->info( sprintf('[%s] %s', $stream->pid, $chunk );
+              app->log->info( sprintf( '[%s] %s', $stream->pid, $chunk ) );
           },
           close => sub {
               my ($stream) = @_;
-              app->log->info( sprintf('[%s] end process', $stream->pid );
+              app->log->info( sprintf( '[%s] end process', $stream->pid ) );
           },
       },
       timeout => 0,
@@ -229,17 +229,17 @@ L<Mojo::IOLoop::Stream::Process> has the following attributes.
 
 C<ioloop_id>, C<pid>, C<command>
 
- stdtout => {
-     read => sub {
-         my ($stream, $chunk) = @_;
-         chomp $chunk;
-         app->log->info( sprintf('[%s] %s', $stream->pid, $chunk );
-     },
-     close => sub {
-         my ($stream) = @_;
-         app->log->info( sprintf('[%s] end process', $stream->pid );
-     },
- }
+  stdout => {
+      read => sub {
+          my ($stream, $chunk) = @_;
+          chomp $chunk;
+          app->log->info( sprintf('[%s] %s', $stream->pid, $chunk ) );
+      },
+      close => sub {
+          my ($stream) = @_;
+          app->log->info( sprintf('[%s] end process', $stream->pid ) );
+      },
+  }
 
 =item * timeout: I<Scalar>
 
