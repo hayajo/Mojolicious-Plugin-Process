@@ -137,9 +137,9 @@ Mojolicious::Plugin::Process - execute a non-blocking command
 
   # Mojolicious
   sub stratup {
-    my $self = shift;
-    $self->plugin('Process');
-    ...
+      my $self = shift;
+      $self->plugin('Process');
+      ...;
   }
 
   # Mojolicious::Lite
@@ -147,26 +147,27 @@ Mojolicious::Plugin::Process - execute a non-blocking command
 
   # in controller
   get '/job' => sub {
-      my $c = shift;
+      my $c      = shift;
       my $job_id = MyApp->create_id( $c->req->params->to_hash );
       $c->stash( id => $job_id );
       $c->render('accept');
 
       if ($job_id) {
+
           # async execution of time-consuming process
           $c->process(
               command => [ 'job-command', 'id', $job_id ],
-              stdtout => {
-                  close  => sub {
+              stdout  => {
+                  close => sub {
                       my ($stream) = @_;
-                      app->log->info( sprintf('[%s] end job', $stream->pid );
+                      app->log->info( sprintf( '[%s] end job', $stream->pid ) );
                   },
               },
-              stdterr => {
-                  read  => sub {
-                      my ($stream, $chunk) = @_;
+              stderr => {
+                  read => sub {
+                      my ( $stream, $chunk ) = @_;
                       chomp $chunk;
-                      app->log->err( sprintf('[%d] %s', $stream->pid, $chunk );
+                      app->log->err( sprintf( '[%d] %s', $stream->pid, $chunk ) );
                   },
               },
               timeout => 0,
