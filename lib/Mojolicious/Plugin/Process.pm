@@ -35,7 +35,7 @@
         my ( $stdout_stream, $stderr_stream ) = _gen_stream(
             $stdout, $stderr,
             pid     => $pid,
-            comman  => $command,
+            command => $command,
             timeout => $timeout,
         );
 
