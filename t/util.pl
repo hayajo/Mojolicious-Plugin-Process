@@ -1,5 +1,6 @@
 use Mojo::Base qw{ -strict };
 
+use Mojolicious;
 use Mojo::IOLoop;
 use Mojo::URL;
 use File::Basename;
@@ -9,9 +10,15 @@ my $_servers = {};
 
 sub get_server { $_servers->{$_[0]} }
 
+sub generate_port {
+    ( $Mojolicious::VERSION >= 5.0 )
+      ? Mojo::IOLoop::Server->generate_port
+      : Mojo::IOLoop->generate_port;
+}
+
 sub start_server {
     my $app   = shift;
-    my $port  = shift || Mojo::IOLoop->generate_port;
+    my $port  = shift || generate_port();
     # my $pid   = open my $server, '-|', 'morbo', '-l', "http://127.0.0.1:$port", $app
     my $pid   = open my $server, '-|', $^X, $app, 'daemon', '-l', "http://127.0.0.1:$port"
         // die "open failed: $!";
