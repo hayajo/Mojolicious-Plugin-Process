@@ -50,11 +50,11 @@ Mojolicious::Plugin::Process is a plugin for Mojolicious apps to execute a non-b
 
 # METHODS
 
-[Mojolicious::Plugin::Process](http://search.cpan.org/perldoc?Mojolicious::Plugin::Process) inherits all methods from [Mojolicious::Plugin](http://search.cpan.org/perldoc?Mojolicious::Plugin).
+[Mojolicious::Plugin::Process](https://metacpan.org/pod/Mojolicious::Plugin::Process) inherits all methods from [Mojolicious::Plugin](https://metacpan.org/pod/Mojolicious::Plugin).
 
 # HELPERS
 
-[Mojolicious::Plugin::Process](http://search.cpan.org/perldoc?Mojolicious::Plugin::Process) contains a helper: _process_.
+[Mojolicious::Plugin::Process](https://metacpan.org/pod/Mojolicious::Plugin::Process) contains a helper: _process_.
 
 ## `process`
 
@@ -86,13 +86,13 @@ Mojolicious::Plugin::Process is a plugin for Mojolicious apps to execute a non-b
 
 - stdout: _HashRef_, stderr: _HashRef_
 
-    can emit the following [Mojo::IOLoop::Stream](http://search.cpan.org/perldoc?Mojo::IOLoop::Stream) events.
+    can emit the following [Mojo::IOLoop::Stream](https://metacpan.org/pod/Mojo::IOLoop::Stream) events.
 
     `close`, `error`, `read`, `timeout`
 
-    in handler, `$stream` is a [Mojo::IOLoop::Stream::Process](http://search.cpan.org/perldoc?Mojo::IOLoop::Stream::Process) Ojbect.
+    in handler, `$stream` is a [Mojo::IOLoop::Stream::Process](https://metacpan.org/pod/Mojo::IOLoop::Stream::Process) Ojbect.
 
-    [Mojo::IOLoop::Stream::Process](http://search.cpan.org/perldoc?Mojo::IOLoop::Stream::Process) has the following attributes.
+    [Mojo::IOLoop::Stream::Process](https://metacpan.org/pod/Mojo::IOLoop::Stream::Process) has the following attributes.
 
     `ioloop_id`, `pid`, `command`
 
@@ -110,7 +110,7 @@ Mojolicious::Plugin::Process is a plugin for Mojolicious apps to execute a non-b
 
 - timeout: _Scalar_
 
-    [Mojo::IOLoop::Stream](http://search.cpan.org/perldoc?Mojo::IOLoop::Stream) timeout attribute.
+    [Mojo::IOLoop::Stream](https://metacpan.org/pod/Mojo::IOLoop::Stream) timeout attribute.
 
         timeout => 300
 
@@ -120,7 +120,7 @@ hayajo <hayajo@cpan.org>
 
 # SEE ALSO
 
-[Mojolicious](http://search.cpan.org/perldoc?Mojolicious), [Mojo::IOLoop::Stream](http://search.cpan.org/perldoc?Mojo::IOLoop::Stream)
+[Mojolicious](https://metacpan.org/pod/Mojolicious), [Mojo::IOLoop::Stream](https://metacpan.org/pod/Mojo::IOLoop::Stream)
 
 # LICENSE
 

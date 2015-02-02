@@ -4,3 +4,9 @@
 /Build
 MYMETA.*
 !META.json
+/_build_params
+/Build.bat
+!Build/
+!LICENSE
+local/
+cpanfile.snapshot
