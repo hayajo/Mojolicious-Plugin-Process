@@ -1,4 +1,6 @@
 Revision history for Perl extension Mojolicious::Plugin::Process
 
+{{$NEXT}}
+
 0.01
         - original version

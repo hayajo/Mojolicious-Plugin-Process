@@ -1,0 +1,8 @@
+name = "Mojolicious-Plugin-Process"
+# badges = ["travis"]
+authority = "cpan:HAYAJO"
+
+module_maker = "ModuleBuild"
+
+[build]
+build_class = "builder::MyBuilder"

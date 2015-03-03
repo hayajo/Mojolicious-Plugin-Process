@@ -46,7 +46,7 @@
             $stderr_stream->on( $ev => $stderr_handler->{$ev} );
         }
 
-        _watch( $stdout_stream, $stderr_stream );
+        _watch( $pid, $stdout_stream, $stderr_stream );
 
         return (wantarray) ? ($pid, $stdin) : $pid;
     }
@@ -87,7 +87,8 @@
     }
 
     sub _watch {
-        for my $stream (@_) {
+        my ($pid, @streams) = @_;
+        for my $stream (@streams) {
             my $id = Mojo::IOLoop->singleton->stream($stream);
 
             $stream->ioloop_id($id);
@@ -95,6 +96,7 @@
                 close => sub {
                     my $stream = shift;
                     Mojo::IOLoop->singleton->remove($id);
+                    waitpid $pid, 0;
                 }
             );
         }
