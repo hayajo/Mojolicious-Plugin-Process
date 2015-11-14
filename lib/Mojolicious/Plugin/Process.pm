@@ -48,6 +48,9 @@
 
         _watch( $pid, $stdout_stream, $stderr_stream );
 
+        # Start event loop only if it is not running already
+        Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
         return (wantarray) ? ($pid, $stdin) : $pid;
     }
 
